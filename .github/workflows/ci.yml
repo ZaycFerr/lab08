@@ -12,6 +12,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        submodules: true  # Скачиваем сабмодули (gtest), если они нужны
 
     - name: Build Docker Image
-      run: docker build -t logger .
+      run: docker build -t logger ./workspace/projects/lab08
+
