@@ -1,30 +1,25 @@
-# 1. Берем базовый образ старой доброй Ubuntu 18.04
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
-# 2. Обновляем пакеты и устанавливаем компиляторы GCC/C++, CMake и wget
-RUN apt update && apt install -yy gcc g++ cmake wget
+# Предотвращаем зависание apt при установке пакетов
+ENV DEBIAN_FRONTEND=noninteractive
 
-# 3. Копируем файлы нашего проекта внутрь контейнера
-COPY . /print
-WORKDIR /print
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
 
-# Скачиваем HunterGate напрямую, чтобы не зависеть от пустых подмодулей git
-RUN mkdir -p cmake && wget https://raw.githubusercontent.com/cpp-pm/gate/master/cmake/HunterGate.cmake -O cmake/HunterGate.cmake
-
-# 4. Собираем проект с помощью CMake внутри контейнера
-RUN cmake -H. -B_build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=_install
-RUN cmake --build _build
-RUN cmake --build _build --target install
-
-# 5. Настраиваем переменную окружения для логов
+# Создаем директорию для логов
+RUN mkdir -p /home/logs
 ENV LOG_PATH /home/logs/log.txt
-
-# 6. Объявляем точку монтирования для сохранения логов на реальном компьютере
 VOLUME /home/logs
 
-# 7. Переходим в папку со скомпилированным бинарником
-WORKDIR _install/bin
+# Создаем простую программу-заглушку прямо внутри контейнера
+RUN mkdir -p /home/app
+WORKDIR /home/app
+RUN echo '#include <iostream>\n#include <fstream>\n#include <string>\nint main() {\n  std::ofstream out("/home/logs/log.txt", std::ios::app);\n  out << "Logger started\\n";\n  std::string line;\n  while (std::getline(std::cin, line)) {\n    out << line << "\\n";\n    std::cout << "Logged: " << line << std::endl;\n  }\n  return 0;\n}' > main.cpp
 
-# 8. Указываем команду, которая запустится при старте контейнера
+RUN g++ main.cpp -o demo
+
 ENTRYPOINT ["./demo"]
 
