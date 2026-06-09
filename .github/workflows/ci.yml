@@ -1,4 +1,4 @@
-name: Docker CI
+name: CMake Build
 
 on:
   push:
@@ -14,6 +14,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build Docker Image
-        run: docker build -t logger .
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc g++ cmake make curl
+
+      - name: Configure CMake
+        run: cmake -B build -S .
+
+      - name: Build project
+        run: cmake --build build
 
